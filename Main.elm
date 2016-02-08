@@ -10,33 +10,31 @@ import Task exposing (Task, andThen)
 
 -- MODEL
 
-type alias Artist =
-  { id: Int
-  , name: String
+type alias ZipCode =
+  { postCode: String
   }
 
 
-artist : Json.Decode.Decoder Artist
-artist =
-  Json.Decode.object2 Artist
-    ("id" := Json.Decode.int)
-    ("name" := Json.Decode.string)
+zipCode : Json.Decode.Decoder ZipCode
+zipCode =
+  Json.Decode.object1 ZipCode
+    ("post code" := Json.Decode.string)
 
 
 type alias Model =
-  List Artist
+  ZipCode
 
 
 init : Model
 init =
-  []
+  ZipCode "12345"
 
 
 -- UPDATE
 
 type Action
   = NoOp
-  | SetArtists (List Artist)
+  | SetZipCode (ZipCode)
 
 
 update : Action -> Model -> Model
@@ -45,7 +43,7 @@ update action model =
     NoOp ->
       model
 
-    SetArtists model' ->
+    SetZipCode model' ->
       model'
 
 
@@ -65,14 +63,14 @@ actions =
   Signal.mailbox NoOp
 
 
-get : Task Http.Error (List Artist)
+get : Task Http.Error (ZipCode)
 get =
-  Http.get (Json.Decode.list artist) "/api/artists"
+  Http.get zipCode "http://api.zippopotam.us/us/02148"
 
 
 port runner : Task Http.Error ()
 port runner =
-  get `andThen` (SetArtists >> Signal.send actions.address)
+  get `andThen` (SetZipCode >> Signal.send actions.address)
 
 
 -- VIEW
@@ -80,13 +78,12 @@ port runner =
 view : Model -> Html
 view model =
   let th' field = th [] [text field]
-      tr' artist = tr [] [ td [] [text <| toString artist.id]
-                         , td [] [text <| artist.name]
-                         ]
+      tr' zipCode = tr [] [ td [] [text <| zipCode.postCode]
+                          ]
   in
     div [class "container"]
     [ table [class "table table-striped table-bordered"]
-      [ thead [] [tr [] (List.map th' ["ID", "name"])]
-      , tbody [] (List.map tr' model)
+      [ thead [] [tr [] (List.map th' ["Post Code"])]
+      , tbody [] [tr' model]
       ]
     ]
