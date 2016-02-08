@@ -6,19 +6,30 @@ import Html.Attributes exposing (class)
 import Http
 import Json.Decode exposing ((:=))
 import Task exposing (Task, andThen)
+import String
 
 
 -- MODEL
 
-type alias ZipCode =
-  { postCode: String
+type alias Place =
+  { placeName: String
   }
 
+type alias ZipCode =
+  { postCode: String
+  , places: List Place
+  }
+
+place : Json.Decode.Decoder Place
+place =
+  Json.Decode.object1 Place
+    ("place name" := Json.Decode.string)
 
 zipCode : Json.Decode.Decoder ZipCode
 zipCode =
-  Json.Decode.object1 ZipCode
+  Json.Decode.object2 ZipCode
     ("post code" := Json.Decode.string)
+    ("places" := (Json.Decode.list place))
 
 
 type alias Model =
@@ -27,7 +38,7 @@ type alias Model =
 
 init : Model
 init =
-  ZipCode "12345"
+  ZipCode "12345" [Place "Nowhere"]
 
 
 -- UPDATE
@@ -75,10 +86,18 @@ port runner =
 
 -- VIEW
 
+placeName : Place -> String
+placeName place = place.placeName
+
+zipCodeDisplay : ZipCode -> String
+zipCodeDisplay zipCode =
+  let places = String.join "," <| List.map placeName zipCode.places
+  in zipCode.postCode ++ places
+
 view : Model -> Html
 view model =
   let th' field = th [] [text field]
-      tr' zipCode = tr [] [ td [] [text <| zipCode.postCode]
+      tr' zipCode = tr [] [ td [] [text <| zipCodeDisplay zipCode]
                           ]
   in
     div [class "container"]
